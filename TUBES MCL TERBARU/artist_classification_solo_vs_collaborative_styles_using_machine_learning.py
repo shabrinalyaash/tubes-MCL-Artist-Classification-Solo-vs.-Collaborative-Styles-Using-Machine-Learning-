@@ -17,7 +17,7 @@ st.title("Artist Classification: Solo vs. Collaborative Styles Using Machine Lea
 
 # 1. Load Data
 st.header("1. Data Preprocessing & EDA")
-df = pd.read_csv('artists.csv')
+df = pd.read_csv('TUBES MCL TERBARU/artists.csv')
 st.subheader("Preview Data")
 st.dataframe(df.head())
 
