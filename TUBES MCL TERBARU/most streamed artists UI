@@ -1,0 +1,145 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LinearRegression
+from sklearn.svm import SVR
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_squared_error, r2_score
+import warnings
+warnings.filterwarnings('ignore')
+
+
+def load_and_clean_data(filepath):
+    df = pd.read_csv(filepath)
+    # Bersihkan angka dengan koma
+    for col in ['Streams', 'Daily', 'As lead', 'Solo', 'As feature']:
+        df[col] = df[col].astype(str).str.replace(',', '').astype(float)
+    return df
+
+
+def plot_top_n(data, col_value, col_label='Artist', n=10, title='', xlabel=''):
+    top_n = data.sort_values(by=col_value, ascending=False).head(n)
+    plt.figure(figsize=(10,6))
+    plt.barh(top_n[col_label], top_n[col_value], color='skyblue')
+    plt.gca().invert_yaxis()
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.show()
+
+
+def run_exploratory_analysis(df):
+    print("Data preview:")
+    print(df.head())
+    print("\nData info:")
+    print(df.info())
+    print("\nDescriptive statistics:")
+    print(df.describe())
+    
+    # Visualisasi
+    plot_top_n(df, 'Streams', title='Top 10 Artists by Total Streams', xlabel='Total Streams')
+    plot_top_n(df, 'Daily', title='Top 10 Artists by Daily Streams', xlabel='Average Daily Streams')
+    plot_top_n(df, 'As lead', title='Top 10 Artists by Streams as Lead Artist', xlabel='Streams as Lead Artist')
+    plot_top_n(df, 'Solo', title='Top 10 Artists by Solo Streams', xlabel='Solo Streams')
+    plot_top_n(df, 'As feature', title='Top 10 Artists by Streams as Featured Artist', xlabel='Streams as Featured Artist')
+
+    print("Most streamed artist overall:", df.loc[df['Streams'].idxmax()][['Artist', 'Streams']])
+    print("Highest daily streams:", df.loc[df['Daily'].idxmax()][['Artist', 'Daily']])
+    print("Highest streams as lead artist:", df.loc[df['As lead'].idxmax()][['Artist', 'As lead']])
+    print("Highest solo streams:", df.loc[df['Solo'].idxmax()][['Artist', 'Solo']])
+    print("Highest streams as featured artist:", df.loc[df['As feature'].idxmax()][['Artist', 'As feature']])
+
+
+def preprocess_for_modeling(df):
+    df_model = df.drop(columns=['Artist'], errors='ignore')
+    df_model = df_model.dropna()
+    X = df_model.drop(columns=['Streams'])
+    y = df_model['Streams']
+    return X, y
+
+
+def split_and_scale(X, y):
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.1, random_state=42)
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_val_scaled = scaler.transform(X_val)
+    return X_train_scaled, X_val_scaled, y_train, y_val
+
+
+def train_linear_regression(X_train_scaled, y_train, X_val_scaled, y_val):
+    param_grid_lr = {'fit_intercept': [True, False]}
+    grid_lr = GridSearchCV(LinearRegression(), param_grid_lr, cv=5, scoring='neg_mean_squared_error')
+    grid_lr.fit(X_train_scaled, y_train)
+    best_lr = grid_lr.best_estimator_
+    y_pred_lr = best_lr.predict(X_val_scaled)
+    mse_lr = mean_squared_error(y_val, y_pred_lr)
+    r2_lr = r2_score(y_val, y_pred_lr)
+    print(f"Linear Regression best params: {grid_lr.best_params_}")
+    print(f"Linear Regression Validation MSE: {mse_lr:.2f}, R2: {r2_lr:.4f}")
+    return mse_lr, r2_lr
+
+
+def train_svr(X_train_scaled, y_train, X_val_scaled, y_val):
+    param_grid_svr = {'C': [0.1, 1, 10], 'kernel': ['linear', 'rbf'], 'gamma': ['scale', 'auto']}
+    grid_svr = GridSearchCV(SVR(), param_grid_svr, cv=5, scoring='neg_mean_squared_error')
+    grid_svr.fit(X_train_scaled, y_train)
+    best_svr = grid_svr.best_estimator_
+    y_pred_svr = best_svr.predict(X_val_scaled)
+    mse_svr = mean_squared_error(y_val, y_pred_svr)
+    r2_svr = r2_score(y_val, y_pred_svr)
+    print(f"SVR best params: {grid_svr.best_params_}")
+    print(f"SVR Validation MSE: {mse_svr:.2f}, R2: {r2_svr:.4f}")
+    return mse_svr, r2_svr
+
+
+def train_random_forest(X_train, y_train, X_val, y_val):
+    param_grid_rf = {
+        'n_estimators': [50, 100, 200],
+        'max_depth': [None, 5, 10],
+        'min_samples_split': [2, 5]
+    }
+    grid_rf = GridSearchCV(RandomForestRegressor(random_state=42), param_grid_rf, cv=5, scoring='neg_mean_squared_error')
+    grid_rf.fit(X_train, y_train)
+    best_rf = grid_rf.best_estimator_
+    y_pred_rf = best_rf.predict(X_val)
+    mse_rf = mean_squared_error(y_val, y_pred_rf)
+    r2_rf = r2_score(y_val, y_pred_rf)
+    print(f"Random Forest best params: {grid_rf.best_params_}")
+    print(f"Random Forest Validation MSE: {mse_rf:.2f}, R2: {r2_rf:.4f}")
+    return mse_rf, r2_rf
+
+
+def visualize_comparison(models, mses, r2s):
+    plt.figure(figsize=(12,5))
+    plt.subplot(1,2,1)
+    plt.bar(models, mses)
+    plt.title('Validation MSE Comparison')
+    plt.ylabel('Mean Squared Error')
+    plt.subplot(1,2,2)
+    plt.bar(models, r2s)
+    plt.title('Validation R² Comparison')
+    plt.ylabel('R² Score')
+    plt.show()
+
+
+def main():
+    filepath = 'artists.csv'  # Ganti sesuai lokasi file csv kamu
+    df = load_and_clean_data(filepath)
+    run_exploratory_analysis(df)
+    X, y = preprocess_for_modeling(df)
+    X_train_scaled, X_val_scaled, y_train, y_val = split_and_scale(X, y)
+
+    mse_lr, r2_lr = train_linear_regression(X_train_scaled, y_train, X_val_scaled, y_val)
+    mse_svr, r2_svr = train_svr(X_train_scaled, y_train, X_val_scaled, y_val)
+    # Untuk Random Forest tidak perlu scaling
+    mse_rf, r2_rf = train_random_forest(X.loc[y_train.index], y_train, X.loc[y_val.index], y_val)
+
+    models = ['Linear Regression', 'SVR', 'Random Forest']
+    mses = [mse_lr, mse_svr, mse_rf]
+    r2s = [r2_lr, r2_svr, r2_rf]
+    visualize_comparison(models, mses, r2s)
+
+
+if __name__ == "__main__":
+    main()
