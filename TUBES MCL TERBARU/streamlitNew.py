@@ -14,11 +14,11 @@ st.set_page_config(layout="wide")
 st.title("Artist Classification: Solo vs. Collaborative Styles Using Machine Learning")
 
 # Header Image
-st.image("headermcl.png", caption="Logo Project", use_column_width=True)
+st.image("TUBES MCL TERBARU/headermcl.png", caption="Logo Project", use_column_width=True)
 
 # 1. Data Preprocessing dan Eksplorasi Data
 st.header("1. Data Preprocessing dan Eksplorasi Data")
-df = pd.read_csv('artists.csv')
+df = pd.read_csv('TUBES MCL TERBARU/artists.csv')
 
 st.subheader("Preview Dataset")
 st.dataframe(df.head())
