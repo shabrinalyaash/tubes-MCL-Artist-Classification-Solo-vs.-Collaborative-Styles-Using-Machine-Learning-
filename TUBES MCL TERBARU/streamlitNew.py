@@ -40,6 +40,25 @@ df['artist_type'] = df.apply(lambda x: 'Solo-oriented' if x['Solo'] >= x['As fea
 st.subheader("Distribusi Label Artist Type")
 st.bar_chart(df['artist_type'].value_counts())
 
+# 2. Data Splitting dan Scaling
+st.header("2. Data Splitting dan Scaling")
+X = df.drop(columns=["Artist", "artist_type"])
+y = df["artist_type"]
+label_encoder = LabelEncoder()
+y_encoded = label_encoder.fit_transform(y)
+
+X_train, X_test, y_train_encoded, y_test_encoded = train_test_split(
+    X, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
+)
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+col1, col2 = st.columns(2)
+col1.metric("Train shape", str(X_train.shape))
+col2.metric("Test shape", str(X_test.shape))
+
 # Distribusi fitur numerik
 st.subheader("Distribusi Fitur Numerik")
 features = ['Streams', 'Daily', 'As lead', 'Solo', 'As feature']
@@ -62,26 +81,6 @@ with col_corr[1]:
     sns.heatmap(df[features].corr(), annot=True, cmap='coolwarm', ax=ax, cbar=False)
     ax.tick_params(labelsize=8)
     st.pyplot(fig)
-
-# 2. Data Splitting dan Scaling
-st.header("2. Data Splitting dan Scaling")
-X = df.drop(columns=["Artist", "artist_type"])
-y = df["artist_type"]
-label_encoder = LabelEncoder()
-y_encoded = label_encoder.fit_transform(y)
-
-X_train, X_test, y_train_encoded, y_test_encoded = train_test_split(
-    X, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
-)
-
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
-
-col1, col2 = st.columns(2)
-col1.metric("Train shape", str(X_train.shape))
-col2.metric("Test shape", str(X_test.shape))
-
 
 # Fungsi buat classification report sebagai DataFrame
 def classification_report_df(y_true, y_pred, target_names):
