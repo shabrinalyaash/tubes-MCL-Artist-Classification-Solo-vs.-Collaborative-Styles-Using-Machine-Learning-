@@ -37,9 +37,6 @@ for col in ['Streams', 'Daily', 'As lead', 'Solo', 'As feature']:
 
 df['artist_type'] = df.apply(lambda x: 'Solo-oriented' if x['Solo'] >= x['As feature'] else 'Collaborative', axis=1)
 
-st.subheader("Distribusi Label Artist Type")
-st.bar_chart(df['artist_type'].value_counts())
-
 # 2. Data Splitting dan Scaling
 st.header("2. Data Splitting dan Scaling")
 X = df.drop(columns=["Artist", "artist_type"])
@@ -58,6 +55,9 @@ X_test_scaled = scaler.transform(X_test)
 col1, col2 = st.columns(2)
 col1.metric("Train shape", str(X_train.shape))
 col2.metric("Test shape", str(X_test.shape))
+
+st.subheader("Distribusi Label Artist Type")
+st.bar_chart(df['artist_type'].value_counts())
 
 # Distribusi fitur numerik
 st.subheader("Distribusi Fitur Numerik")
